@@ -1,6 +1,6 @@
-############     Satellitle Analysis Program         ############
-############         Ian Outhwaite, Dec 23 2015      ############
-############ Professor Dawn Carone, Willaims College ############
+############                   Satellitle Analysis Program                    ############
+############                   Ian Outhwaite, Dec 23 2015                     ############
+############ Professor Dawn Carone, @Willaims College, now Swarthmore College ############
 
 import sys, getopt
 import math
@@ -59,7 +59,7 @@ def main():
     try:
         options = (getopt.getopt(args,"s:e:"))[0]
     except getopt.GetoptError:
-        print 'Error: missing or unknown argument input'
+        print ('Error: missing or unknown argument input')
         sys.exit(2)
     sval = 0
     eval = 100
@@ -70,7 +70,7 @@ def main():
                 float(temp)
                 eval = int(temp)
             except ValueError:
-                print "Input argument after -e must be a whole number from 0->100"
+                print ("Input argument after -e must be a whole number from 0->100")
                 sys.exit(2)
         if arg[0] == '-s':
             temp = arg[1]
@@ -78,7 +78,7 @@ def main():
                 float(temp)
                 sval = int(temp)
             except ValueError:
-                print "Input argument after -s must be a whole number from 0->100"
+                print ("Input argument after -s must be a whole number from 0->100")
                 sys.exit(2)
 
     inputdir = './Genomes'
@@ -89,12 +89,11 @@ def main():
             #print "Genome Name: " + GenomeFile
             genome = getSeq("./Genomes/"+GenomeFile)
             genlen = len(genome)
-            print GenomeFile, genlen
-            '''
+            print (GenomeFile, genlen)
             #find SATII Subfamily Locations, A1, A2, B
             for SATII in satelliteSeqs:
                 results = countSat2(genome,SATII,sval,eval)
-                print results
+                print (results)
                 i = 0
                 temp = []
                 for item in results:
@@ -105,7 +104,6 @@ def main():
                         temp = temp+item
                         file_new.write("%s\n" % temp)
                         temp = []
-            '''
 
 main()
 

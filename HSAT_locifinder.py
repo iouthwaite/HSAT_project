@@ -1,5 +1,5 @@
 #HSATII Loci Finder Program
-#By Ian Outhwaite, 8/9/2016, iro1@williams.edu, iouthwaite1@gmail.com,
+#By Ian Outhwaite, 9/17/2016, iro1@williams.edu, iouthwaite1@gmail.com,
 #For: Professor Dawn Carone, Swarthmore College
 
 #REQUIRES SCIPY
@@ -10,7 +10,7 @@
 # -u means stringency of loci - I found 8 worked well, but you can move it up or down as you wish
 #DEFAULTS: minhits per loci is 25, and the kernel (named uk, or unlikelynumber sometimes) is set to 3, so looking at a location +/- 3 other locations around it
 
-#Formatted for python 2.7.
+#Formatted for python, will run on 2.7 and 3.5
 
 import os, subprocess
 import sys, getopt
