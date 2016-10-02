@@ -1,5 +1,5 @@
 ############                   Satellitle Analysis Program                    ############
-############                   Ian Outhwaite, Dec 23 2015                     ############
+############                   Ian Outhwaite, Oct 1 2016                      ############
 ############ Professor Dawn Carone, @Willaims College, now Swarthmore College ############
 
 import sys, getopt
@@ -16,43 +16,52 @@ def getSeq(filename):
     return data
 
 #Counts hits of HSAT with a minimum of 75% fidelity to original 24mers. Does not include indels. Counts hits in both directions, and returns the locations of hits as well as the number of missed bases in each hit, up to a maximum of 6 mismatches per 24mer (aka 75%).
-#Same as above, except if the first character isn't correct it moves on to the next cycle instead of making up to six comparisons before determining that the hit is non-existent. There is a possibility for missing some hits, but it is roughly 6x faster. Better for getting a general idea of where loci might be.
-def countSat2(seq,sat,startpercent,endpercent):
+def countSat2(seq,sat,startpercent,endpercent,Name):
     l = len(seq)
     rsat = sat[::-1]
     sats = [sat,rsat]
-    seqlen = len(seq)
     satlen = len(sat)
-    count = 0
-    results = [[],[]] #locations, number of misses per location
-    for s in sats:
-        i = int(startpercent*l/100)
-        while i<(seqlen-satlen+1-((100-endpercent)*l/100)):
-            c = 0
-            misses = 0
-            while c<satlen:
-                querychar = s[c]
-                seqchar = seq[i+c]
-                if querychar != seqchar:
-                    misses += 1
-                if misses > 6:
-                    break
-                if c == satlen-1:
-                    count += 1
-                    results[0].append(i)
-                    results[1].append(misses)
-                    i=c+i
-                    break
-                c += 1
-            i += 1
-    results.sort()
-    return results
+    results = []
+    i = int(startpercent*l/100)
+    start = i
+    end = (((endpercent/100.0) * l) - satlen)
+    while i< end:
+        c = 0
+        misses = [0,0]
+        while c<satlen:
+            querychar1 = sats[0][c]
+            querychar2 = sats[1][c]
+            seqchar = seq[i+c]
+            if querychar1 != seqchar:
+                misses[0] += 1
+            if querychar2 != seqchar:
+                misses[1] += 1
+            if misses[0] > 6 and misses[1] > 6:
+                break
+            if c == satlen-1:
+                if misses[0] < misses[1]:
+                    results.append([i,misses[0]])
+                else:
+                    results.append([i,misses[1]])
+                i = c+i
+                break
+            c += 1
+        i+=1
+        if i%1000000 == 0:
+            percent = ((i-start)/(end-start))*100
+            print (str(percent)[0:4] + '% done with ' + Name)
+    results = sorted(results, key=lambda location: location[0]) #sort hits by location
+    r = [[],[]]
+    for entry in results:
+        r[0].append(entry[0])
+        r[1].append(entry[1])
+    return r
 
-hsat2A1 = 'TTGATTCCATTAGTTTCCATTGGA'
-hsat2A2 = 'CATTCGATTCCATTCGATGATAAT'
-hsat2B = 'TTCGATTCCATTTGATGATTCCAT'
-
-satelliteSeqs = [hsat2A1,hsat2A2,hsat2B]
+satelliteSeqs = [
+    ['hsat2A1','TTGATTCCATTAGTTTCCATTGGA'],
+    ['hsat2A2','CATTCGATTCCATTCGATGATAAT'],
+    ['hsat2B','TTCGATTCCATTTGATGATTCCAT']
+]
 
 def main():
     args=(sys.argv[1:])
@@ -82,28 +91,19 @@ def main():
                 sys.exit(2)
 
     inputdir = './Genomes'
-    file_new = open('results','w')
+    file_new = open('HSAT_hit_results','w')
     for GenomeFile in os.listdir(inputdir):
         if (GenomeFile != '.DS_Store'):
             file_new.write("Genome Name: " + GenomeFile + "\n")
             #print "Genome Name: " + GenomeFile
             genome = getSeq("./Genomes/"+GenomeFile)
             genlen = len(genome)
-            print (GenomeFile, genlen)
+            print (str(GenomeFile) + '     length: ' + str(genlen)+'bp')
             #find SATII Subfamily Locations, A1, A2, B
             for SATII in satelliteSeqs:
-                results = countSat2(genome,SATII,sval,eval)
-                print (results)
-                i = 0
-                temp = []
-                for item in results:
-                    if i==0:
-                        temp = temp+item
-                        i = 1
-                    else:
-                        temp = temp+item
-                        file_new.write("%s\n" % temp)
-                        temp = []
+                seq = SATII[1]
+                results = countSat2(genome,seq,sval,eval,SATII[0])
+                file_new.write("%s\n" % results)
 
 main()
 
@@ -115,6 +115,24 @@ main()
 
 
 
+
+'''
+    misses = 0
+    while c<satlen:
+    querychar = s[c]
+    seqchar = seq[i+c]
+    if querychar != seqchar: #if the two characters you're looking at aren't the same, it is a miss
+    misses += 1
+    if misses > 6: #worse than 75% identity, break out
+    break
+    if c == satlen-1: #if you've found an entire 24mer
+    count += 1
+    results.append([i,misses])
+    i=c+i
+    break
+    c += 1
+    i += 1
+    '''
 
 
 

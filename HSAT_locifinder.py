@@ -1,5 +1,5 @@
 #HSATII Loci Finder Program
-#By Ian Outhwaite, 9/17/2016, iro1@williams.edu, iouthwaite1@gmail.com,
+#By Ian Outhwaite, 10/1/2016, iro1@williams.edu, iouthwaite1@gmail.com,
 #For: Professor Dawn Carone, Swarthmore College
 
 #REQUIRES SCIPY
@@ -114,7 +114,7 @@ def generateBootstrapData(distances):
         dists = dists + bdata
     return dists
 
-#gets the number of entries under a certain value
+#gets the entries under a certain value
 def getDUnder(data,val):
     ndata = []
     for entry in data:
@@ -122,7 +122,7 @@ def getDUnder(data,val):
             ndata.append(entry)
     return ndata
 
-#gives the number of entries over a certain value
+#gives the entries over a certain value
 def getDOver(data,val):
     ndata = []
     for entry in data:
@@ -140,26 +140,40 @@ def findmaxvalue(data):
 
 #determines what values to use for the beta distribution, as well as giving other stats about the distribution.
 def determineDistribution2(bootstrapdatadists):
+    
     overalm = computeMeanDist(bootstrapdatadists)
     overalsd = computeSD(bootstrapdatadists,overalm)
+    
     modelbp = int(overalm+(3*overalsd))
+    
     over = getDOver(bootstrapdatadists,modelbp)
     under = getDUnder(bootstrapdatadists,modelbp)
+    
     punif = (len(over) + 0.0)/len(bootstrapdatadists)
     max = findmaxvalue(bootstrapdatadists)
+    
+    meanunder = computeMeanDist(under)
+    sdUnder = computeSD(under,meanunder)
+    
     u = overalm/(max+0.0)
     sd = overalsd/(max+0.0)
     Vr = sd*sd
     alpha = ( ((1-u)/Vr) - (1/u)) * (u*u)
     beta = alpha*((1/u)-1)
+    
     print ('')
     print ("Model Information")
+    print('')
     print ("Upper limit for model: " +str(max) + "bp")
-    print ("Mean distance for distances under " + str(modelbp) + "bp: " + str(u))
-    print ("Standard Deviation for distances under " + str(modelbp) + "bp: " + str(sd))
-    print ("Probability a distance is more than " + str(modelbp) + "bp: " + str(punif))
+    print ("Overall mean distance between hits: " + str(int(overalm))+ "bp")
+    print ("Overall standard deviation for distances between hits: " +str(overalsd)+ "bp")
     print ("alpha: " + str(alpha))
     print ("beta: " + str(beta))
+    print ('')
+    print ("Three standard deviations from the mean: " + str(int(overalm+(3*overalsd))) + "bp")
+    print ("Mean distance for distances under " + str(modelbp) + "bp: " + str(int(meanunder))+ "bp")
+    print ("Standard Deviation for distances under " + str(modelbp) + "bp: " + str(sdUnder)+ "bp")
+    print ("Probability a distance is more than " + str(modelbp) + "bp: " + str(punif))
     return [punif,alpha,beta,max,modelbp]
 
 #finds loci of hits
@@ -254,10 +268,12 @@ def getAllHSATIIData(textfile,referencefile,minhits,uk):
     maxval = backgrounddata[3]
     alpha = backgrounddata[1]
     beta = backgrounddata[2]
-    data2 = data.split('\r')
     Chromosome = ''
     c = []
     currentCHR = 'null'
+    data2 = data.split('\r')
+    if len(data2) == 1:
+        data2 = data2[0].split('\n')
     for entry in data2:
         name = [currentCHR,'null']
         if len(entry) > 0:
@@ -290,7 +306,7 @@ def getAllHSATIIData(textfile,referencefile,minhits,uk):
                     locations.append([int(templocs[j]),int(temphits[j])])
                     j += 1
                 if len(locations) > 0:
-                    c.append( [getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval),(name[0]+name[1])] )
+                    c.append( [getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval,name[1]),(name[0]+name[1])] )
                 else:
                     c.append([[[]],name[0]+name[1]])
     return c
@@ -311,34 +327,37 @@ def getCombinedLociHSATIIData(textfile,referencefile,minhits,uk):
     alpha = backgrounddata[1]
     beta = backgrounddata[2]
     data2 = data.split('\r')
+    if len(data2) == 1:
+        data2 = data2[0].split('\n')
     Chromosome = ''
     locations = []
     c = []
     if len(data2) > 0:
         for entry in data2:
-            if entry[0] == 'G':
-                temp = entry.split(' ')
-                oldc = Chromosome
-                Chromosome = temp[2]
-                c.append([getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval),oldc])
-                locations = []
-                print ('')
-                print (Chromosome)
-            else:
-                data3 = entry[2:len(entry)-2].split('], [')
-                templocs = data3[0].split(', ')
-                temphits = data3[1].split(', ')
-                j = 0
-                while j<len(temphits):
-                    locations.append([int(templocs[j]),int(temphits[j])])
-                    j += 1
-        temp = [getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval),Chromosome]
+            if len(entry) > 0:
+                if entry[0] == 'G':
+                    temp = entry.split(' ')
+                    oldc = Chromosome
+                    Chromosome = temp[2]
+                    c.append([getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval,'all'),oldc])
+                    locations = []
+                    print ('')
+                    print (Chromosome)
+                else:
+                    data3 = entry[2:len(entry)-2].split('], [')
+                    templocs = data3[0].split(', ')
+                    temphits = data3[1].split(', ')
+                    j = 0
+                    while j<len(temphits):
+                        locations.append([int(templocs[j]),int(temphits[j])])
+                        j += 1
+        temp = [getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval,'all'),Chromosome]
         c.append(temp)
     else:
         c.append([[[]],Chromosome])
     return c
         
-def getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval):
+def getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval,subfamily):
     c = []
     l = sorted(locations,key=lambda tup: tup[0])
     locations = []
@@ -362,8 +381,10 @@ def getLocations(locations,modelbreakpoint,alpha,beta,minhits,uk,maxval,probval)
         temp.append(loc[0][1])
         print ('Number of Hits in Loci: ' + str(loc[1]))
         temp.append(loc[1])
-        c.append(temp)
         print ('Mean Value of Hits in Loci: ' + str(int((((24.0-mval)/24)*100))) + "% identity")
+        temp.append(str(int((((24.0-mval)/24)*100))))
+        temp.append(subfamily)
+        c.append(temp)
         j+= 1
     return c
 
@@ -375,6 +396,8 @@ def writeToSheet(c):
     sheet1.write(0, 1, "start value")
     sheet1.write(0, 2, "end value")
     sheet1.write(0, 3, "number of hits")
+    sheet1.write(0, 4, "percent identity of hits in loci")
+    sheet1.write(0, 5, "HSATII subfamily")
     x = 1
     for entry1 in c:
         name = entry1[1]
@@ -385,6 +408,8 @@ def writeToSheet(c):
                 sheet1.write(x, 1, str(entry[0]))
                 sheet1.write(x, 2, str(entry[1]))
                 sheet1.write(x, 3, str(entry[2]))
+                sheet1.write(x, 4, str(entry[3]))
+                sheet1.write(x, 5, str(entry[4]))
                 x += 1
                 t = 1
         if t==0:
